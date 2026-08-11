@@ -4,108 +4,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>【厨房専用】注文受付画面</title>
+    <!-- Pusherの通信部品を読み込み -->
+    <script src="https://pusher.com"></script>
     <style>
-        body {
-            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
-            background-color: #343a40; /* 厨房で見やすいように背景は暗め */
-            color: white;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 {
-            text-align: center;
-            color: #ffc107;
-            font-size: 40px;
-            margin-bottom: 20px;
-            border-bottom: 4px solid #ffc107;
-            padding-bottom: 10px;
-        }
-        .order-container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        /* 注文が入った時の巨大なカード */
-        .order-card {
-            background-color: #495057;
-            border: 5px solid #ffc107;
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        }
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 28px;
-            font-weight: bold;
-            border-bottom: 2px dashed #ffc107;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-            color: #ffc107;
-        }
-        .order-body {
-            font-size: 36px; /* おばあさまが見やすい超巨大文字 */
-            font-weight: bold;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            margin-bottom: 20px;
-        }
-        .order-total {
-            font-size: 30px;
-            text-align: right;
-            color: #f8d7da;
-            font-weight: bold;
-        }
-        /* 対応完了ボタン */
-        .btn-complete {
-            display: block;
-            width: 100%;
-            background-color: #28a745;
-            color: white;
-            font-size: 32px;
-            font-weight: bold;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            text-align: center;
-            margin-top: 15px;
-        }
-        .no-order {
-            text-align: center;
-            font-size: 32px;
-            color: #adb5bd;
-            margin-top: 100px;
-        }
+        body { font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background-color: #343a40; color: white; margin: 0; padding: 20px; }
+        h1 { text-align: center; color: #ffc107; font-size: 40px; margin-bottom: 20px; border-bottom: 4px solid #ffc107; padding-bottom: 10px; }
+        .order-container { max-width: 900px; margin: 0 auto; }
+        .order-card { background-color: #495057; border: 5px solid #ffc107; border-radius: 20px; padding: 25px; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .order-header { display: flex; justify-content: space-between; font-size: 28px; font-weight: bold; border-bottom: 2px dashed #ffc107; padding-bottom: 10px; margin-bottom: 15px; color: #ffc107; }
+        .order-body { font-size: 36px; font-weight: bold; line-height: 1.6; white-space: pre-wrap; margin-bottom: 20px; }
+        .order-total { font-size: 30px; text-align: right; color: #f8d7da; font-weight: bold; }
+        .btn-complete { display: block; width: 100%; background-color: #28a745; color: white; font-size: 32px; font-weight: bold; padding: 15px; border: none; border-radius: 10px; cursor: pointer; text-align: center; margin-top: 15px; }
+        .no-order { text-align: center; font-size: 32px; color: #adb5bd; margin-top: 100px; }
+        #bell-sound { display: none; }
     </style>
 </head>
 <body>
 
     <h1>🍜 厨房 注文受付（じゅうもんうけつけ） 🍜</h1>
 
+    <!-- 注文が入った時に鳴るピコン音 -->
+    <audio id="bell-sound" src="https://google.com" preload="auto"></audio>
+
     <div class="order-container">
-        <!-- ここに注文が自動で入ります -->
         <div id="kitchen-order-list">
             <div class="no-order">いまのところ、新しい注文はありません。</div>
         </div>
     </div>
 
     <script>
-        // 本番ではここに通信処理が自動で入ります
-        // テスト用の疑似データを入れて動作を確認します
-        let testOrders = [
-            { id: 1, time: "16:50", text: "・ラーメン × 1\n・ライス × 1", total: "850円" }
-        ];
+        let activeOrders = [];
+        let lastOrderCount = 0;
+
+        function loadOrders() {
+            activeOrders = JSON.parse(localStorage.getItem('ramen_orders') || '[]');
+            
+            // 新しい注文が増えたらピコンと音を鳴らす
+            if (activeOrders.length > lastOrderCount) {
+                try { document.getElementById('bell-sound').play(); } catch(e) {}
+            }
+            lastOrderCount = activeOrders.length;
+            
+            showOrders();
+        }
+
+        // あなたのPusher情報をセット
+        const pusherKey = 'bf49b4f0cec0367b306c'; 
+        const pusherCluster = 'ap3';
+
+        const pusher = new Pusher(pusherKey, { cluster: pusherCluster });
+        const channel = pusher.subscribe('ramen-channel');
+
+        channel.bind('new-order', function(data) {
+            loadOrders();
+        });
+
+        // 1秒おきに最新データが無いか自動見回りする設定（ブロック完全回避用）
+        setInterval(loadOrders, 1000);
 
         function showOrders() {
             const listEl = document.getElementById('kitchen-order-list');
-            if(testOrders.length === 0) {
+            if(activeOrders.length === 0) {
                 listEl.innerHTML = '<div class="no-order">いまのところ、新しい注文はありません。</div>';
                 return;
             }
 
             listEl.innerHTML = '';
-            testOrders.forEach(order => {
+            activeOrders.forEach(order => {
                 const card = document.createElement('div');
                 card.className = 'order-card';
                 card.innerHTML = `
@@ -121,15 +86,14 @@
             });
         }
 
-        // おばあさまが「できた！」ボタンを押したときの動き
         function completeOrder(id) {
-            // 音を鳴らす（ラーメンができた合図など、今後の拡張用）
-            testOrders = testOrders.filter(o => o.id !== id);
+            activeOrders = activeOrders.filter(o => o.id !== id);
+            localStorage.setItem('ramen_orders', JSON.stringify(activeOrders));
+            lastOrderCount = activeOrders.length;
             showOrders();
         }
 
-        // 初回表示
-        showOrders();
+        loadOrders();
     </script>
 </body>
 </html>
