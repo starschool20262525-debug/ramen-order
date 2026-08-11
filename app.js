@@ -1,0 +1,904 @@
+const WORKER_URL =
+    "https://rame-order-api.starschool20262525.workers.dev";
+
+const PUSHER_KEY =
+    "bf49b4f0cec0367b306c";
+
+const PUSHER_CLUSTER =
+    "ap3";
+
+const menuData = [
+    {
+        id: "m1",
+        name: "ラーメン",
+        price: 700,
+        available: true
+    },
+    {
+        id: "m2",
+        name: "チャーシューメン",
+        price: 950,
+        available: true
+    },
+    {
+        id: "m3",
+        name: "ギョーザ（5個）",
+        price: 400,
+        available: true
+    },
+    {
+        id: "m4",
+        name: "ライス",
+        price: 150,
+        available: true
+    },
+    {
+        id: "m5",
+        name: "【季節限定】冷やし中華",
+        price: 850,
+        available: false
+    }
+];
+
+let order = {};
+
+menuData.forEach(item => {
+    order[item.id] = 0;
+});
+
+let kitchenOrders = [];
+
+
+// ============================
+// Pusher接続
+// ============================
+
+let pusher = null;
+let channel = null;
+
+function connectPusher() {
+
+    if (typeof Pusher === "undefined") {
+        setStatus("Pusherを読み込めませんでした。");
+        return;
+    }
+
+    pusher = new Pusher(PUSHER_KEY, {
+        cluster: PUSHER_CLUSTER
+    });
+
+    channel = pusher.subscribe("ramen-channel");
+
+    channel.bind("pusher:subscription_succeeded", function() {
+
+        setStatus("通信中");
+
+    });
+
+
+    // 新しい注文
+    channel.bind("new-order", function(data) {
+
+        console.log("新しい注文", data);
+
+        if (isKitchenPage()) {
+
+            kitchenOrders.push(data);
+
+            saveKitchenOrders();
+
+            renderKitchenOrders();
+
+            playNotification();
+
+        }
+
+    });
+
+
+    // メニュー状態変更
+    channel.bind("toggle-menu", function(data) {
+
+        console.log("メニュー変更", data);
+
+        const item =
+            menuData.find(item => item.id === data.id);
+
+        if (!item) return;
+
+        item.available = data.available;
+
+        if (!item.available) {
+            order[item.id] = 0;
+        }
+
+        if (isCustomerPage()) {
+
+            renderCustomerMenu();
+
+            updateSummary();
+
+        }
+
+        if (isKitchenPage()) {
+
+            renderKitchenMenu();
+
+        }
+
+    });
+
+}
+
+
+// ============================
+// ページ判定
+// ============================
+
+function isCustomerPage() {
+
+    return document.getElementById("menu-list") !== null;
+
+}
+
+function isKitchenPage() {
+
+    return document.getElementById("order-list") !== null;
+
+}
+
+
+// ============================
+// ステータス表示
+// ============================
+
+function setStatus(text) {
+
+    const element =
+        document.getElementById("connection-status");
+
+    if (element) {
+        element.innerText = text;
+    }
+
+}
+
+
+// ============================
+// お客さん側
+// ============================
+
+function renderCustomerMenu() {
+
+    const container =
+        document.getElementById("menu-list");
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    menuData.forEach(item => {
+
+        const element =
+            document.createElement("div");
+
+        element.className =
+            "menu-item " +
+            (item.available ? "" : "sold-out");
+
+        element.innerHTML = `
+
+            <div class="sold-out-badge">
+                うりきれ
+            </div>
+
+            <div class="menu-info">
+
+                <div class="menu-name">
+                    ${escapeHTML(item.name)}
+                </div>
+
+                <div class="menu-price">
+                    ${item.price}円
+                </div>
+
+            </div>
+
+            <div class="controls">
+
+                <button
+                    class="btn btn-minus"
+                    ${item.available ? "" : "disabled"}
+                    onclick="changeQty('${item.id}', -1)">
+                    ー
+                </button>
+
+                <span
+                    class="count-display"
+                    id="qty-${item.id}">
+                    ${order[item.id]}
+                </span>
+
+                <button
+                    class="btn btn-plus"
+                    ${item.available ? "" : "disabled"}
+                    onclick="changeQty('${item.id}', 1)">
+                    ＋
+                </button>
+
+            </div>
+
+        `;
+
+        container.appendChild(element);
+
+    });
+
+}
+
+
+function changeQty(id, change) {
+
+    const item =
+        menuData.find(item => item.id === id);
+
+    if (!item || !item.available) {
+        return;
+    }
+
+    order[id] += change;
+
+    if (order[id] < 0) {
+        order[id] = 0;
+    }
+
+    const counter =
+        document.getElementById(`qty-${id}`);
+
+    if (counter) {
+        counter.innerText =
+            order[id];
+    }
+
+    updateSummary();
+
+}
+
+
+function updateSummary() {
+
+    const container =
+        document.getElementById("summary-items");
+
+    const totalElement =
+        document.getElementById("total-price");
+
+    if (!container || !totalElement) {
+        return;
+    }
+
+    container.innerHTML = "";
+
+    let total = 0;
+
+    let hasItems = false;
+
+
+    menuData.forEach(item => {
+
+        const quantity =
+            order[item.id];
+
+        if (
+            quantity > 0 &&
+            item.available
+        ) {
+
+            hasItems = true;
+
+            const itemTotal =
+                item.price * quantity;
+
+            total += itemTotal;
+
+            const line =
+                document.createElement("div");
+
+            line.className =
+                "summary-line";
+
+            line.innerHTML = `
+
+                <span>
+                    ${escapeHTML(item.name)}
+                    × ${quantity}
+                </span>
+
+                <span>
+                    ${itemTotal} 円
+                </span>
+
+            `;
+
+            container.appendChild(line);
+
+        }
+
+    });
+
+
+    if (!hasItems) {
+
+        container.innerHTML = `
+            <div class="empty-summary">
+                まだえらばれていません
+            </div>
+        `;
+
+    }
+
+
+    totalElement.innerText =
+        `${total} 円`;
+
+}
+
+
+// ============================
+// 注文送信
+// ============================
+
+async function submitOrder() {
+
+    let total = 0;
+
+    let orderText = "";
+
+
+    menuData.forEach(item => {
+
+        const quantity =
+            order[item.id];
+
+        if (
+            quantity > 0 &&
+            item.available
+        ) {
+
+            orderText +=
+                `${item.name} × ${quantity}\n`;
+
+            total +=
+                item.price * quantity;
+
+        }
+
+    });
+
+
+    if (total === 0) {
+
+        alert(
+            "商品がえらばれていません。"
+        );
+
+        return;
+
+    }
+
+
+    const submitButton =
+        document.querySelector(".btn-submit");
+
+    if (submitButton) {
+
+        submitButton.disabled = true;
+
+        submitButton.innerText =
+            "お店につたえています…";
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${WORKER_URL}/order`,
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        order: orderText,
+
+                        total: total,
+
+                        time:
+                            new Date()
+                                .toLocaleTimeString(
+                                    "ja-JP",
+                                    {
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                    }
+                                )
+
+                    })
+
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.error ||
+                "注文送信エラー"
+            );
+
+        }
+
+
+        alert(
+            "注文をお店につたえました！"
+        );
+
+
+        menuData.forEach(item => {
+            order[item.id] = 0;
+        });
+
+
+        renderCustomerMenu();
+
+        updateSummary();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "注文を送信できませんでした。\n" +
+            "通信状態を確認してください。"
+        );
+
+    }
+
+
+    if (submitButton) {
+
+        submitButton.disabled = false;
+
+        submitButton.innerText =
+            "お店につたえる（注文をきめる）";
+
+    }
+
+}
+
+
+// ============================
+// お店側 メニュー
+// ============================
+
+function renderKitchenMenu() {
+
+    const container =
+        document.getElementById(
+            "menu-buttons"
+        );
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+
+    menuData.forEach(item => {
+
+        const button =
+            document.createElement("button");
+
+        button.className =
+            "menu-button " +
+            (
+                item.available
+                    ? "selling"
+                    : "stopped"
+            );
+
+
+        button.innerText =
+            `${item.name}: ` +
+            (
+                item.available
+                    ? "〇 販売中"
+                    : "✕ 中止中"
+            );
+
+
+        button.onclick =
+            () => toggleMenu(
+                item.id,
+                !item.available
+            );
+
+
+        container.appendChild(button);
+
+    });
+
+}
+
+
+// ============================
+// 売り切れ変更
+// ============================
+
+async function toggleMenu(
+    id,
+    available
+) {
+
+    try {
+
+        const response =
+            await fetch(
+                `${WORKER_URL}/menu`,
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        id: id,
+
+                        available:
+                            available
+
+                    })
+
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.error ||
+                "メニュー変更エラー"
+            );
+
+        }
+
+
+        const item =
+            menuData.find(
+                item => item.id === id
+            );
+
+
+        if (item) {
+
+            item.available =
+                available;
+
+        }
+
+
+        renderKitchenMenu();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "メニューの変更に失敗しました。"
+        );
+
+    }
+
+}
+
+
+// ============================
+// お店側 注文
+// ============================
+
+function renderKitchenOrders() {
+
+    const container =
+        document.getElementById(
+            "order-list"
+        );
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+
+    if (kitchenOrders.length === 0) {
+
+        container.innerHTML = `
+            <div class="empty">
+                まだ注文はありません。
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    kitchenOrders
+        .slice()
+        .reverse()
+        .forEach(orderData => {
+
+            const card =
+                document.createElement("div");
+
+            card.className =
+                "order-card";
+
+
+            card.innerHTML = `
+
+                <div class="order-header">
+
+                    <span>
+                        注文
+                        ${escapeHTML(
+                            orderData.id
+                        )}
+                    </span>
+
+                    <span>
+                        ${escapeHTML(
+                            orderData.time
+                        )}
+                    </span>
+
+                </div>
+
+
+                <div class="order-items">
+
+                    ${escapeHTML(
+                        orderData.text
+                    )}
+
+                </div>
+
+
+                <div class="order-total">
+
+                    合計：
+                    ${orderData.total}
+                    円
+
+                </div>
+
+
+                <button
+                    class="order-button"
+                    onclick="completeOrder('${orderData.id}')">
+
+                    提供済みにする
+
+                </button>
+
+            `;
+
+
+            if (
+                orderData.status ===
+                "提供済み"
+            ) {
+
+                card.classList.add(
+                    "completed"
+                );
+
+            }
+
+
+            container.appendChild(card);
+
+        });
+
+}
+
+
+// ============================
+// 提供済み
+// ============================
+
+function completeOrder(id) {
+
+    kitchenOrders =
+        kitchenOrders.map(orderData => {
+
+            if (
+                String(orderData.id) ===
+                String(id)
+            ) {
+
+                return {
+                    ...orderData,
+                    status: "提供済み"
+                };
+
+            }
+
+            return orderData;
+
+        });
+
+
+    saveKitchenOrders();
+
+    renderKitchenOrders();
+
+}
+
+
+// ============================
+// ローカル保存
+// ============================
+
+function saveKitchenOrders() {
+
+    localStorage.setItem(
+        "ramen-kitchen-orders",
+        JSON.stringify(
+            kitchenOrders
+        )
+    );
+
+}
+
+
+function loadKitchenOrders() {
+
+    try {
+
+        kitchenOrders =
+            JSON.parse(
+                localStorage.getItem(
+                    "ramen-kitchen-orders"
+                ) || "[]"
+            );
+
+    } catch {
+
+        kitchenOrders = [];
+
+    }
+
+}
+
+
+// ============================
+// 通知音
+// ============================
+
+function playNotification() {
+
+    try {
+
+        const audioContext =
+            new (
+                window.AudioContext ||
+                window.webkitAudioContext
+            )();
+
+        const oscillator =
+            audioContext.createOscillator();
+
+        const gain =
+            audioContext.createGain();
+
+
+        oscillator.frequency.value =
+            880;
+
+        gain.gain.value =
+            0.15;
+
+
+        oscillator.connect(
+            gain
+        );
+
+        gain.connect(
+            audioContext.destination
+        );
+
+
+        oscillator.start();
+
+        oscillator.stop(
+            audioContext.currentTime +
+            0.25
+        );
+
+    } catch {
+
+        // 音が使えない環境でも
+        // システム自体は動作します。
+
+    }
+
+}
+
+
+// ============================
+// HTMLエスケープ
+// ============================
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+// ============================
+// 起動
+// ============================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        if (isKitchenPage()) {
+
+            loadKitchenOrders();
+
+            renderKitchenMenu();
+
+            renderKitchenOrders();
+
+        }
+
+
+        if (isCustomerPage()) {
+
+            renderCustomerMenu();
+
+            updateSummary();
+
+        }
+
+
+        connectPusher();
+
+    }
+);
