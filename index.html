@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ラーメン店 注文補助システム</title>
+    <!-- Pusherの通信部品を読み込み -->
+    <script src="https://pusher.com"></script>
     <style>
         body {
             font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
@@ -19,8 +21,6 @@
             font-size: 36px;
             margin-bottom: 10px;
         }
-        
-        /* 【追加】お店専用の管理エリア */
         .shop-admin-panel {
             background-color: #e9ecef;
             border: 2px dashed #6c757d;
@@ -36,8 +36,6 @@
             font-weight: bold;
             color: #495057;
             margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
         }
         .admin-buttons {
             display: flex;
@@ -52,17 +50,8 @@
             cursor: pointer;
             background-color: white;
         }
-        .btn-toggle.active-selling {
-            background-color: #28a745;
-            color: white;
-            border-color: #28a745;
-        }
-        .btn-toggle.active-stopped {
-            background-color: #dc3545;
-            color: white;
-            border-color: #dc3545;
-        }
-
+        .btn-toggle.active-selling { background-color: #28a745; color: white; border-color: #28a745; }
+        .btn-toggle.active-stopped { background-color: #dc3545; color: white; border-color: #dc3545; }
         .hygiene-alert {
             background-color: #fff3cd;
             border: 2px solid #ffeeba;
@@ -76,10 +65,7 @@
             margin-left: auto;
             margin-right: auto;
         }
-        .menu-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
+        .menu-container { max-width: 800px; margin: 0 auto; }
         .menu-item {
             background: white;
             border: 3px solid #ccc;
@@ -91,203 +77,147 @@
             align-items: center;
             position: relative;
         }
-        /* 【追加】売り切れ時のグレーアウト表示 */
-        .menu-item.sold-out {
-            background-color: #e9ecef;
-            border-color: #adb5bd;
-        }
-        .menu-item.sold-out .menu-name,
-        .menu-item.sold-out .menu-price,
-        .menu-item.sold-out .count-display {
-            color: #6c757d;
-        }
+        .menu-item.sold-out { background-color: #e9ecef; border-color: #adb5bd; }
+        .menu-item.sold-out .menu-name, .menu-item.sold-out .menu-price, .menu-item.sold-out .count-display { color: #6c757d; }
         .sold-out-badge {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%) rotate(-10deg);
-            background-color: rgba(220, 53, 69, 0.9);
-            color: white;
-            font-weight: bold;
-            font-size: 38px;
-            padding: 10px 30px;
-            border-radius: 5px;
-            border: 3px solid white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 10;
-            display: none;
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-10deg);
+            background-color: rgba(220, 53, 69, 0.9); color: white; font-weight: bold; font-size: 38px;
+            padding: 10px 30px; border-radius: 5px; border: 3px solid white; z-index: 10; display: none;
         }
-        .menu-item.sold-out .sold-out-badge {
-            display: block;
-        }
-
+        .menu-item.sold-out .sold-out-badge { display: block; }
         .menu-info { flex: 1; }
         .menu-name { font-weight: bold; font-size: 30px; }
         .menu-price { color: #666; margin-top: 5px; }
         .controls { display: flex; align-items: center; gap: 15px; }
-        .btn {
-            font-size: 32px;
-            font-weight: bold;
-            width: 70px;
-            height: 70px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            user-select: none;
-        }
+        .btn { font-size: 32px; font-weight: bold; width: 70px; height: 70px; border: none; border-radius: 10px; cursor: pointer; user-select: none; }
         .btn-minus { background-color: #e0e0e0; color: #333; }
         .btn-plus { background-color: #d9534f; color: white; }
         .count-display { font-size: 36px; font-weight: bold; min-width: 40px; text-align: center; }
-        
-        /* 注文確認エリア */
-        .order-summary {
-            max-width: 800px;
-            margin: 30px auto 0;
-            background: #fff;
-            border: 4px solid #d9534f;
-            border-radius: 15px;
-            padding: 25px;
-        }
+        .order-summary { max-width: 800px; margin: 30px auto 0; background: #fff; border: 4px solid #d9534f; border-radius: 15px; padding: 25px; }
         .summary-title { font-size: 32px; font-weight: bold; border-bottom: 3px solid #d9534f; padding-bottom: 10px; margin-bottom: 15px; }
         .summary-line { display: flex; justify-content: space-between; margin-bottom: 10px; }
         .total-line { font-size: 36px; font-weight: bold; color: #d9534f; border-top: 2px dashed #ccc; padding-top: 15px; margin-top: 15px; }
-        .btn-submit {
-            display: block;
-            width: 100%;
-            background-color: #28a745;
-            color: white;
-            font-size: 36px;
-            font-weight: bold;
-            padding: 20px;
-            border: none;
-            border-radius: 15px;
-            margin-top: 25px;
-            cursor: pointer;
-        }
+        .btn-submit { display: block; width: 100%; background-color: #28a745; color: white; font-size: 36px; font-weight: bold; padding: 20px; border: none; border-radius: 15px; margin-top: 25px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <!-- 【追加】お店の人専用の切り替えスイッチ -->
     <div class="shop-admin-panel">
-        <div class="admin-title">
-            <span>⚙️ お店専用メニュー切り替え（ここを押すと売り切れにできます）</span>
-        </div>
+        <div class="admin-title">⚙️ お店専用メニュー切り替え（ここを押すと売り切れにできます）</div>
         <div id="admin-buttons-container" class="admin-buttons"></div>
     </div>
 
-    <div class="hygiene-alert">
-        ✨ いつもありがとうございます！注文のまえに、手をきれいに洗いましょう。
-    </div>
-
+    <div class="hygiene-alert">✨ いつもありがとうございます！注文のまえに、手をきれいに洗いましょう。</div>
     <h1>ご注文をお選びください</h1>
 
     <div class="menu-container">
         <div id="menu-list"></div>
-
         <div class="order-summary">
             <div class="summary-title">📝 えらんだもの（注文の確認）</div>
-            <div id="summary-items">
-                <div style="color: #999; text-align: center;">まだえらばれていません</div>
-            </div>
-            <div class="total-line summary-line">
-                <span>合計（ごうけい）:</span>
-                <span id="total-price">0 円</span>
-            </div>
+            <div id="summary-items"><div style="color: #999; text-align: center;">まだえらばれていません</div></div>
+            <div class="total-line summary-line"><span>合計（ごうけい）:</span><span id="total-price">0 円</span></div>
             <button class="btn-submit" onclick="submitOrder()">お店につたえる（注文をきめる）</button>
         </div>
     </div>
 
     <script>
-        // メニューデータ（available: true で販売中、false で販売中止・売り切れ）
         const menuData = [
             { id: "m1", name: "ラーメン", price: 700, available: true },
             { id: "m2", name: "チャーシューメン", price: 950, available: true },
             { id: "m3", name: "ギョーザ（5個）", price: 400, available: true },
             { id: "m4", name: "ライス", price: 150, available: true },
-            { id: "m5", name: "【季節限定】冷やし中華", price: 850, available: false } // 初期状態を販売中止に設定
+            { id: "m5", name: "【季節限定】冷やし中華", price: 850, available: false }
         ];
 
         let order = {};
         menuData.forEach(item => { order[item.id] = 0; });
 
-        // 管理画面のボタンを生成する関数
-        function renderAdminPanel() {
-            const container = document.getElementById('admin-buttons-container');
-            container.innerHTML = '';
+        // あなたのPusher情報をセット
+        const pusherKey = 'bf49b4f0cec0367b306c'; 
+        const pusherCluster = 'ap3';
 
-            menuData.forEach(item => {
-                const btn = document.createElement('button');
-                btn.className = `btn-toggle ${item.available ? 'active-selling' : 'active-stopped'}`;
-                btn.innerText = `${item.name}: ${item.available ? '〇 販売中' : '✕ 中止中'}`;
-                btn.onclick = () => toggleAvailability(item.id);
-                container.appendChild(btn);
-            });
-        }
+        const pusher = new Pusher(pusherKey, { cluster: pusherCluster });
+        const channel = pusher.subscribe('ramen-channel');
 
-        // 販売・中止を切り替える関数
-        function toggleAvailability(id) {
-            const item = menuData.find(m => m.id === id);
+        // 厨房側で売り切れボタンが押されたときの自動連動
+        channel.bind('toggle-menu', function(data) {
+            const item = menuData.find(m => m.id === data.id);
             if (item) {
-                item.available = !item.available;
-                if (!item.available) {
-                    order[id] = 0; // 中止にしたら注文数も0にリセット
-                }
+                item.available = data.available;
+                if (!item.available) order[data.id] = 0;
                 renderAdminPanel();
                 renderMenu();
                 updateSummary();
             }
+        });
+
+        function renderAdminPanel() {
+            const container = document.getElementById('admin-buttons-container');
+            container.innerHTML = '';
+            menuData.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = `btn-toggle ${item.available ? 'active-selling' : 'active-stopped'}`;
+                btn.innerText = `${item.name}: ${item.available ? '〇 販売中' : '✕ 中止中'}`;
+                btn.onclick = () => sendToggleMenu(item.id, !item.available);
+                container.appendChild(btn);
+            });
         }
 
-        // メニュー画面を表示
+        function sendToggleMenu(id, newStatus) {
+            const item = menuData.find(m => m.id === id);
+            item.available = newStatus;
+            if(!newStatus) order[id] = 0;
+            renderAdminPanel();
+            renderMenu();
+            updateSummary();
+            // 状態を厨房へ通知
+            localStorage.setItem('ramen_menu_status', JSON.stringify(menuData));
+        }
+
         function renderMenu() {
             const menuList = document.getElementById('menu-list');
             menuList.innerHTML = '';
-
             menuData.forEach(item => {
                 const itemEl = document.createElement('div');
-                // availableがfalseならsold-outクラスをつける
                 itemEl.className = `menu-item ${item.available ? '' : 'sold-out'}`;
-                
-                // 販売中止時はボタンを押せなくする
                 const minusBtnAttr = item.available ? `onclick="changeQty('${item.id}', -1)"` : 'disabled';
                 const plusBtnAttr = item.available ? `onclick="changeQty('${item.id}', 1)"` : 'disabled';
-
                 itemEl.innerHTML = `
                     <div class="sold-out-badge">うりきれ</div>
-                    <div class="menu-info">
-                        <div class="menu-name">${item.name}</div>
-                        <div class="menu-price">${item.price}円</div>
-                    </div>
+                    <div class="menu-info"><div class="menu-name">${item.name}</div><div class="menu-price">${item.price}円</div></div>
                     <div class="controls">
                         <button class="btn btn-minus" ${minusBtnAttr}>ー</button>
                         <span class="count-display" id="qty-${item.id}">${order[item.id]}</span>
                         <button class="btn btn-plus" ${plusBtnAttr}>＋</button>
-                    </div>
-                `;
+                    </div>`;
                 menuList.appendChild(itemEl);
             });
         }
 
         function changeQty(id, change) {
-            let current = order[id] || 0;
-            current += change;
-            if (current < 0) current = 0;
-            order[id] = current;
-            document.getElementById(`qty-${id}`).innerText = current;
-            updateSummary();
+            let current = order[id] || 0; current += change; if (current < 0) current = 0;
+            order[id] = current; document.getElementById(`qty-${id}`).innerText = current; updateSummary();
         }
 
         function updateSummary() {
             const summaryItems = document.getElementById('summary-items');
             const totalPriceEl = document.getElementById('total-price');
-            
-            summaryItems.innerHTML = '';
-            let total = 0;
-            let hasItems = false;
-
+            summaryItems.innerHTML = ''; let total = 0; let hasItems = false;
             menuData.forEach(item => {
                 const qty = order[item.id];
-                if (qty > 0 && item.available) { // 販売中のものだけ計算
-                    hasItems = true;
+                if (qty > 0 && item.available) {
+                    hasItems = true; const itemTotal = item.price * qty; total += itemTotal;
+                    const line = document.createElement('div'); line.className = 'summary-line';
+                    line.innerHTML = `<span>${item.name} × ${qty}</span><span>${itemTotal} 円</span>`;
+                    summaryItems.appendChild(line);
+                }
+            });
+            if (!hasItems) summaryItems.innerHTML = '<div style="color: #999; text-align: center;">まだえらばれていません</div>';
+            totalPriceEl.innerText = `${total} 円`;
+        }
+
+        function submitOrder() {
+            let total = 0; let orderText = "";
+            menuData.forEach(item => {
+                const qty = order[item.id];
 
