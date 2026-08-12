@@ -601,96 +601,99 @@ async function toggleMenu(id, available) {
 
 function renderKitchenOrders() {
 
-  const container =
-    document.getElementById("order-list");
+    const container =
+        document.getElementById("order-list");
 
-  if (!container) {
-    return;
-  }
+    if (!container) return;
 
-  container.innerHTML = "";
+    container.innerHTML = "";
 
+    if (kitchenOrders.length === 0) {
 
-  if (kitchenOrders.length === 0) {
+        container.innerHTML = `
+            <div class="empty">
+                まだ注文はありません。
+            </div>
+        `;
 
-    container.innerHTML = `
-      <div class="empty">
-        まだ注文はありません。
-      </div>
-    `;
-
-    return;
-  }
+        return;
+    }
 
 
-  kitchenOrders
-    .slice()
-    .reverse()
-    .forEach(orderData => {
+    kitchenOrders
+        .slice()
+        .reverse()
+        .forEach(orderData => {
 
-      const card =
-        document.createElement("div");
+            const card =
+                document.createElement("div");
 
-      card.className =
-        "order-card";
-
-
-      card.innerHTML = `
-
-        <div class="order-header">
-
-          <span>
-            注文
-            ${escapeHTML(orderData.id)}
-          </span>
-
-          <span>
-            ${escapeHTML(orderData.time)}
-          </span>
-
-        </div>
+            card.className = "order-card";
 
 
-        <div class="order-items">
-
-          ${escapeHTML(orderData.order || "")}
-
-        </div>
-
-
-        <div class="order-total">
-
-          合計：
-          ${Number(orderData.total) || 0}
-          円
-
-        </div>
+            // 注文内容を安全に取得
+            const orderText =
+                orderData.text ||
+                orderData.order ||
+                "";
 
 
-        <button
-          class="order-button"
-          onclick="completeOrder('${escapeHTML(orderData.id)}')">
+            card.innerHTML = `
 
-          提供済みにする
+                <div class="order-header">
 
-        </button>
+                    <span>
+                        注文
+                        ${escapeHTML(orderData.id)}
+                    </span>
 
-      `;
+                    <span>
+                        ${escapeHTML(orderData.time)}
+                    </span>
 
-
-      if (
-        orderData.status ===
-        "提供済み"
-      ) {
-
-        card.classList.add(
-          "completed"
-        );
-      }
+                </div>
 
 
-      container.appendChild(card);
-    });
+                <div class="order-items">
+
+                    ${escapeHTML(orderText)}
+
+                </div>
+
+
+                <div class="order-total">
+
+                    合計：
+                    ${Number(orderData.total) || 0}
+                    円
+
+                </div>
+
+
+                <button
+                    class="order-button"
+                    onclick="completeOrder('${orderData.id}')">
+
+                    提供済みにする
+
+                </button>
+
+            `;
+
+
+            if (
+                orderData.status === "提供済み"
+            ) {
+
+                card.classList.add("completed");
+
+            }
+
+
+            container.appendChild(card);
+
+        });
+
 }
 
 
