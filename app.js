@@ -7,6 +7,11 @@ const PUSHER_KEY =
 const PUSHER_CLUSTER =
     "ap3";
 
+
+// ==================================================
+// メニュー
+// ==================================================
+
 const menuData = [
     {
         id: "m1",
@@ -40,157 +45,265 @@ const menuData = [
     }
 ];
 
+
 let order = {};
 
 menuData.forEach(item => {
     order[item.id] = 0;
 });
 
+
+// お店側で受信した注文
 let kitchenOrders = [];
 
 
-// ============================
-// Pusher接続
-// ============================
+// ==================================================
+// Pusher
+// ==================================================
 
 let pusher = null;
 let channel = null;
 
+
 function connectPusher() {
 
     if (typeof Pusher === "undefined") {
+
         setStatus("Pusherを読み込めませんでした。");
+
         return;
     }
+
 
     pusher = new Pusher(PUSHER_KEY, {
         cluster: PUSHER_CLUSTER
     });
 
-    channel = pusher.subscribe("ramen-channel");
 
-    channel.bind("pusher:subscription_succeeded", function() {
-
-        setStatus("通信中");
-
-    });
+    channel =
+        pusher.subscribe("ramen-channel");
 
 
+    channel.bind(
+        "pusher:subscription_succeeded",
+        function() {
+
+            setStatus("通信中");
+
+        }
+    );
+
+
+    // ----------------------------------------------
     // 新しい注文
-    channel.bind("new-order", function(data) {
+    // ----------------------------------------------
 
-        console.log("新しい注文", data);
+    channel.bind(
+        "new-order",
+        function(data) {
 
-        if (isKitchenPage()) {
+            console.log(
+                "新しい注文を受信しました",
+                data
+            );
 
-            kitchenOrders.push(data);
 
-            saveKitchenOrders();
+            if (isKitchenPage()) {
 
-            renderKitchenOrders();
+                kitchenOrders.unshift(data);
 
-            playNotification();
+                saveKitchenOrders();
+
+                renderKitchenOrders();
+
+                playNotification();
+
+                alert("新しい注文が届きました！");
+
+            }
 
         }
+    );
 
-    });
 
-
+    // ----------------------------------------------
     // メニュー状態変更
-    channel.bind("toggle-menu", function(data) {
+    // ----------------------------------------------
 
-        console.log("メニュー変更", data);
+    channel.bind(
+        "menu-updated",
+        function(data) {
 
-        const item =
-            menuData.find(item => item.id === data.id);
+            console.log(
+                "メニュー状態変更",
+                data
+            );
 
-        if (!item) return;
 
-        item.available = data.available;
+            const item =
+                menuData.find(
+                    item => item.id === data.id
+                );
 
-        if (!item.available) {
-            order[item.id] = 0;
+
+            if (!item) return;
+
+
+            item.available =
+                data.available;
+
+
+            // 売り切れになったら数量を0にする
+            if (!item.available) {
+
+                order[item.id] = 0;
+
+            }
+
+
+            // お客さん側
+            if (isCustomerPage()) {
+
+                renderCustomerMenu();
+
+                updateSummary();
+
+            }
+
+
+            // お店側
+            if (isKitchenPage()) {
+
+                renderKitchenMenu();
+
+            }
+
         }
-
-        if (isCustomerPage()) {
-
-            renderCustomerMenu();
-
-            updateSummary();
-
-        }
-
-        if (isKitchenPage()) {
-
-            renderKitchenMenu();
-
-        }
-
-    });
+    );
 
 }
 
 
-// ============================
+// ==================================================
 // ページ判定
-// ============================
+// ==================================================
 
 function isCustomerPage() {
 
-    return document.getElementById("menu-list") !== null;
+    return (
+        document.getElementById("menu-list") !== null
+    );
 
 }
+
 
 function isKitchenPage() {
 
-    return document.getElementById("order-list") !== null;
+    return (
+        document.getElementById("orders") !== null
+    );
 
 }
 
 
-// ============================
-// ステータス表示
-// ============================
+// ==================================================
+// 通信状態
+// ==================================================
 
 function setStatus(text) {
 
     const element =
-        document.getElementById("connection-status");
+        document.getElementById("status");
+
 
     if (element) {
+
         element.innerText = text;
+
     }
 
 }
 
 
-// ============================
+// ==================================================
 // お客さん側
-// ============================
+// ==================================================
 
 function renderCustomerMenu() {
 
     const container =
         document.getElementById("menu-list");
 
+
     if (!container) return;
 
+
     container.innerHTML = "";
+
 
     menuData.forEach(item => {
 
         const element =
             document.createElement("div");
 
+
         element.className =
             "menu-item " +
-            (item.available ? "" : "sold-out");
+            (
+                item.available
+                    ? ""
+                    : "soldout"
+            );
+
+
+        let controls = "";
+
+
+        if (item.available) {
+
+            controls = `
+
+                <button
+                    class="btn minus"
+                    onclick="changeQty('${item.id}', -1)">
+                    −
+                </button>
+
+                <span
+                    class="count"
+                    id="qty-${item.id}">
+                    ${order[item.id]}
+                </span>
+
+                <button
+                    class="btn plus"
+                    onclick="changeQty('${item.id}', 1)">
+                    ＋
+                </button>
+
+            `;
+
+        } else {
+
+            controls = `
+
+                <span
+                    style="font-weight:bold;">
+                    販売停止
+                </span>
+
+            `;
+
+        }
+
 
         element.innerHTML = `
 
-            <div class="sold-out-badge">
-                うりきれ
-            </div>
+            ${
+                item.available
+                    ? ""
+                    : '<div class="soldout-badge">うりきれ</div>'
+            }
 
             <div class="menu-info">
 
@@ -199,36 +312,19 @@ function renderCustomerMenu() {
                 </div>
 
                 <div class="menu-price">
-                    ${item.price}円
+                    ${item.price} 円
                 </div>
 
             </div>
 
             <div class="controls">
 
-                <button
-                    class="btn btn-minus"
-                    ${item.available ? "" : "disabled"}
-                    onclick="changeQty('${item.id}', -1)">
-                    ー
-                </button>
-
-                <span
-                    class="count-display"
-                    id="qty-${item.id}">
-                    ${order[item.id]}
-                </span>
-
-                <button
-                    class="btn btn-plus"
-                    ${item.available ? "" : "disabled"}
-                    onclick="changeQty('${item.id}', 1)">
-                    ＋
-                </button>
+                ${controls}
 
             </div>
 
         `;
+
 
         container.appendChild(element);
 
@@ -237,47 +333,81 @@ function renderCustomerMenu() {
 }
 
 
+// ==================================================
+// 個数変更
+// ==================================================
+
 function changeQty(id, change) {
 
     const item =
-        menuData.find(item => item.id === id);
+        menuData.find(
+            item => item.id === id
+        );
+
 
     if (!item || !item.available) {
+
         return;
+
     }
+
 
     order[id] += change;
 
+
     if (order[id] < 0) {
+
         order[id] = 0;
+
     }
+
 
     const counter =
-        document.getElementById(`qty-${id}`);
+        document.getElementById(
+            `qty-${id}`
+        );
+
 
     if (counter) {
+
         counter.innerText =
             order[id];
+
     }
+
 
     updateSummary();
 
 }
 
 
+// ==================================================
+// 注文確認
+// ==================================================
+
 function updateSummary() {
 
     const container =
-        document.getElementById("summary-items");
+        document.getElementById(
+            "summary-items"
+        );
+
 
     const totalElement =
-        document.getElementById("total-price");
+        document.getElementById(
+            "total-price"
+        );
+
 
     if (!container || !totalElement) {
+
         return;
+
     }
 
+
     container.innerHTML = "";
+
 
     let total = 0;
 
@@ -289,6 +419,7 @@ function updateSummary() {
         const quantity =
             order[item.id];
 
+
         if (
             quantity > 0 &&
             item.available
@@ -296,16 +427,21 @@ function updateSummary() {
 
             hasItems = true;
 
+
             const itemTotal =
                 item.price * quantity;
 
+
             total += itemTotal;
+
 
             const line =
                 document.createElement("div");
 
+
             line.className =
                 "summary-line";
+
 
             line.innerHTML = `
 
@@ -320,6 +456,7 @@ function updateSummary() {
 
             `;
 
+
             container.appendChild(line);
 
         }
@@ -330,9 +467,12 @@ function updateSummary() {
     if (!hasItems) {
 
         container.innerHTML = `
-            <div class="empty-summary">
+
+            <div
+                style="text-align:center;color:#999;">
                 まだえらばれていません
             </div>
+
         `;
 
     }
@@ -344,42 +484,64 @@ function updateSummary() {
 }
 
 
-// ============================
+// ==================================================
 // 注文送信
-// ============================
+// ==================================================
 
 async function submitOrder() {
 
     let total = 0;
 
-    let orderText = "";
+    const items = [];
 
+
+    // ----------------------------
+    // 注文内容を作る
+    // ----------------------------
 
     menuData.forEach(item => {
 
         const quantity =
             order[item.id];
 
+
         if (
             quantity > 0 &&
             item.available
         ) {
 
-            orderText +=
-                `${item.name} × ${quantity}\n`;
-
-            total +=
+            const itemTotal =
                 item.price * quantity;
+
+
+            total += itemTotal;
+
+
+            items.push({
+
+                id: item.id,
+
+                name: item.name,
+
+                price: item.price,
+
+                quantity: quantity
+
+            });
 
         }
 
     });
 
 
-    if (total === 0) {
+    // ----------------------------
+    // 注文がない
+    // ----------------------------
+
+    if (items.length === 0) {
 
         alert(
-            "商品がえらばれていません。"
+            "商品を1つ以上えらんでください。"
         );
 
         return;
@@ -387,8 +549,13 @@ async function submitOrder() {
     }
 
 
+    // ----------------------------
+    // ボタンを無効化
+    // ----------------------------
+
     const submitButton =
-        document.querySelector(".btn-submit");
+        document.querySelector(".submit");
+
 
     if (submitButton) {
 
@@ -398,6 +565,43 @@ async function submitOrder() {
             "お店につたえています…";
 
     }
+
+
+    // ----------------------------
+    // 注文データ
+    // ----------------------------
+
+    const now =
+        new Date();
+
+
+    const orderData = {
+
+        id:
+            Date.now().toString(),
+
+        time:
+            now.toLocaleTimeString(
+                "ja-JP",
+                {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                }
+            ),
+
+        items:
+            items,
+
+        total:
+            total
+
+    };
+
+
+    console.log(
+        "送信する注文",
+        orderData
+    );
 
 
     try {
@@ -414,23 +618,8 @@ async function submitOrder() {
                             "application/json"
                     },
 
-                    body: JSON.stringify({
-
-                        order: orderText,
-
-                        total: total,
-
-                        time:
-                            new Date()
-                                .toLocaleTimeString(
-                                    "ja-JP",
-                                    {
-                                        hour: "2-digit",
-                                        minute: "2-digit"
-                                    }
-                                )
-
-                    })
+                    body:
+                        JSON.stringify(orderData)
 
                 }
             );
@@ -450,13 +639,25 @@ async function submitOrder() {
         }
 
 
+        console.log(
+            "注文送信成功",
+            result
+        );
+
+
         alert(
             "注文をお店につたえました！"
         );
 
 
+        // ----------------------------
+        // 注文をリセット
+        // ----------------------------
+
         menuData.forEach(item => {
+
             order[item.id] = 0;
+
         });
 
 
@@ -469,6 +670,7 @@ async function submitOrder() {
 
         console.error(error);
 
+
         alert(
             "注文を送信できませんでした。\n" +
             "通信状態を確認してください。"
@@ -477,30 +679,36 @@ async function submitOrder() {
     }
 
 
+    // ----------------------------
+    // ボタンを戻す
+    // ----------------------------
+
     if (submitButton) {
 
         submitButton.disabled = false;
 
         submitButton.innerText =
-            "お店につたえる（注文をきめる）";
+            "お店につたえる";
 
     }
 
 }
 
 
-// ============================
+// ==================================================
 // お店側 メニュー
-// ============================
+// ==================================================
 
 function renderKitchenMenu() {
 
     const container =
         document.getElementById(
-            "menu-buttons"
+            "menu-controls"
         );
 
+
     if (!container) return;
+
 
     container.innerHTML = "";
 
@@ -509,6 +717,7 @@ function renderKitchenMenu() {
 
         const button =
             document.createElement("button");
+
 
         button.className =
             "menu-button " +
@@ -520,19 +729,21 @@ function renderKitchenMenu() {
 
 
         button.innerText =
-            `${item.name}: ` +
+            item.name +
+            " : " +
             (
                 item.available
                     ? "〇 販売中"
-                    : "✕ 中止中"
+                    : "✕ 販売停止"
             );
 
 
         button.onclick =
-            () => toggleMenu(
-                item.id,
-                !item.available
-            );
+            () =>
+                toggleMenu(
+                    item.id,
+                    !item.available
+                );
 
 
         container.appendChild(button);
@@ -542,9 +753,9 @@ function renderKitchenMenu() {
 }
 
 
-// ============================
+// ==================================================
 // 売り切れ変更
-// ============================
+// ==================================================
 
 async function toggleMenu(
     id,
@@ -565,14 +776,16 @@ async function toggleMenu(
                             "application/json"
                     },
 
-                    body: JSON.stringify({
+                    body:
+                        JSON.stringify({
 
-                        id: id,
+                            id:
+                                id,
 
-                        available:
-                            available
+                            available:
+                                available
 
-                    })
+                        })
 
                 }
             );
@@ -592,6 +805,7 @@ async function toggleMenu(
         }
 
 
+        // ローカル画面も即座に変更
         const item =
             menuData.find(
                 item => item.id === id
@@ -603,6 +817,13 @@ async function toggleMenu(
             item.available =
                 available;
 
+
+            if (!available) {
+
+                order[id] = 0;
+
+            }
+
         }
 
 
@@ -613,6 +834,7 @@ async function toggleMenu(
 
         console.error(error);
 
+
         alert(
             "メニューの変更に失敗しました。"
         );
@@ -622,18 +844,20 @@ async function toggleMenu(
 }
 
 
-// ============================
-// お店側 注文
-// ============================
+// ==================================================
+// お店側 注文表示
+// ==================================================
 
 function renderKitchenOrders() {
 
     const container =
         document.getElementById(
-            "order-list"
+            "orders"
         );
 
+
     if (!container) return;
+
 
     container.innerHTML = "";
 
@@ -641,9 +865,11 @@ function renderKitchenOrders() {
     if (kitchenOrders.length === 0) {
 
         container.innerHTML = `
+
             <div class="empty">
-                まだ注文はありません。
+                まだ注文はありません
             </div>
+
         `;
 
         return;
@@ -651,110 +877,119 @@ function renderKitchenOrders() {
     }
 
 
-    kitchenOrders
-        .slice()
-        .reverse()
-        .forEach(orderData => {
+    kitchenOrders.forEach(orderData => {
 
-            const card =
-                document.createElement("div");
-
-            card.className =
-                "order-card";
+        const div =
+            document.createElement("div");
 
 
-            card.innerHTML = `
-
-                <div class="order-header">
-
-                    <span>
-                        注文
-                        ${escapeHTML(
-                            orderData.id
-                        )}
-                    </span>
-
-                    <span>
-                        ${escapeHTML(
-                            orderData.time
-                        )}
-                    </span>
-
-                </div>
+        div.className =
+            "order";
 
 
-                <div class="order-items">
+        let itemsHTML = "";
 
+
+        // ----------------------------
+        // 商品一覧
+        // ----------------------------
+
+        if (
+            Array.isArray(orderData.items)
+        ) {
+
+            orderData.items.forEach(item => {
+
+                const itemTotal =
+                    Number(item.price) *
+                    Number(item.quantity);
+
+
+                itemsHTML += `
+
+                    <div class="order-item">
+
+                        <span>
+                            ${escapeHTML(item.name)}
+                            × ${item.quantity}
+                        </span>
+
+                        <span>
+                            ${itemTotal} 円
+                        </span>
+
+                    </div>
+
+                `;
+
+            });
+
+        }
+
+
+        // ----------------------------
+        // 注文カード
+        // ----------------------------
+
+        div.innerHTML = `
+
+            <div class="order-header">
+
+                <span>
+                    注文
+                </span>
+
+                <span>
                     ${escapeHTML(
-                        orderData.text
+                        orderData.time || ""
                     )}
+                </span>
 
-                </div>
-
-
-                <div class="order-total">
-
-                    合計：
-                    ${orderData.total}
-                    円
-
-                </div>
+            </div>
 
 
-                <button
-                    class="order-button"
-                    onclick="completeOrder('${orderData.id}')">
-
-                    提供済みにする
-
-                </button>
-
-            `;
+            ${itemsHTML}
 
 
-            if (
-                orderData.status ===
-                "提供済み"
-            ) {
+            <div class="order-total">
 
-                card.classList.add(
-                    "completed"
-                );
+                合計
+                ${Number(orderData.total) || 0}
+                円
 
-            }
+            </div>
 
 
-            container.appendChild(card);
+            <button
+                class="done"
+                onclick="removeOrder('${escapeHTML(orderData.id)}')">
 
-        });
+                提供済みにする
+
+            </button>
+
+        `;
+
+
+        container.appendChild(div);
+
+    });
 
 }
 
 
-// ============================
-// 提供済み
-// ============================
+// ==================================================
+// 注文を消す
+// ==================================================
 
-function completeOrder(id) {
+function removeOrder(id) {
 
     kitchenOrders =
-        kitchenOrders.map(orderData => {
-
-            if (
-                String(orderData.id) ===
+        kitchenOrders.filter(
+            order =>
+                String(order.id) !==
                 String(id)
-            ) {
-
-                return {
-                    ...orderData,
-                    status: "提供済み"
-                };
-
-            }
-
-            return orderData;
-
-        });
+        );
 
 
     saveKitchenOrders();
@@ -764,17 +999,20 @@ function completeOrder(id) {
 }
 
 
-// ============================
+// ==================================================
 // ローカル保存
-// ============================
+// ==================================================
 
 function saveKitchenOrders() {
 
     localStorage.setItem(
+
         "ramen-kitchen-orders",
+
         JSON.stringify(
             kitchenOrders
         )
+
     );
 
 }
@@ -786,10 +1024,18 @@ function loadKitchenOrders() {
 
         kitchenOrders =
             JSON.parse(
+
                 localStorage.getItem(
                     "ramen-kitchen-orders"
                 ) || "[]"
+
             );
+
+        if (!Array.isArray(kitchenOrders)) {
+
+            kitchenOrders = [];
+
+        }
 
     } catch {
 
@@ -800,22 +1046,29 @@ function loadKitchenOrders() {
 }
 
 
-// ============================
+// ==================================================
 // 通知音
-// ============================
+// ==================================================
 
 function playNotification() {
 
     try {
 
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+
+        if (!AudioContext) return;
+
+
         const audioContext =
-            new (
-                window.AudioContext ||
-                window.webkitAudioContext
-            )();
+            new AudioContext();
+
 
         const oscillator =
             audioContext.createOscillator();
+
 
         const gain =
             audioContext.createGain();
@@ -824,13 +1077,12 @@ function playNotification() {
         oscillator.frequency.value =
             880;
 
+
         gain.gain.value =
             0.15;
 
 
-        oscillator.connect(
-            gain
-        );
+        oscillator.connect(gain);
 
         gain.connect(
             audioContext.destination
@@ -838,6 +1090,7 @@ function playNotification() {
 
 
         oscillator.start();
+
 
         oscillator.stop(
             audioContext.currentTime +
@@ -847,36 +1100,61 @@ function playNotification() {
     } catch {
 
         // 音が使えない環境でも
-        // システム自体は動作します。
+        // システムは動作します。
 
     }
 
 }
 
 
-// ============================
+// ==================================================
 // HTMLエスケープ
-// ============================
+// ==================================================
 
 function escapeHTML(value) {
 
     return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 
 }
 
 
-// ============================
+// ==================================================
 // 起動
-// ============================
+// ==================================================
 
 document.addEventListener(
     "DOMContentLoaded",
     function() {
+
+
+        // ----------------------------
+        // お店側
+        // ----------------------------
 
         if (isKitchenPage()) {
 
@@ -889,6 +1167,10 @@ document.addEventListener(
         }
 
 
+        // ----------------------------
+        // お客さん側
+        // ----------------------------
+
         if (isCustomerPage()) {
 
             renderCustomerMenu();
@@ -897,6 +1179,10 @@ document.addEventListener(
 
         }
 
+
+        // ----------------------------
+        // Pusher接続
+        // ----------------------------
 
         connectPusher();
 
