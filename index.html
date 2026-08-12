@@ -1,56 +1,242 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ラーメン店 注文</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        body {
-            font-family: "Meiryo", sans-serif;
-            text-align: center;
-            padding: 50px 20px;
-            background-color: #f8f9fa;
-        }
+  <title>博来軒 注文画面</title>
 
-        h1 {
-            color: #d9534f;
-            font-size: 36px;
-        }
+  <script src="https://js.pusher.com/8.3.0/pusher.min.js"></script>
 
-        p {
-            font-size: 22px;
-        }
+  <style>
+    body {
+      font-family: "Meiryo", sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+      font-size: 22px;
+    }
 
-        a {
-            display: block;
-            max-width: 500px;
-            margin: 30px auto;
-            padding: 20px;
-            background-color: #28a745;
-            color: white;
-            text-decoration: none;
-            border-radius: 15px;
-            font-size: 28px;
-            font-weight: bold;
-        }
+    h1 {
+      text-align: center;
+      color: #d9534f;
+      font-size: 36px;
+    }
 
-        a:hover {
-            opacity: 0.9;
-        }
-    </style>
+    .hygiene {
+      max-width: 800px;
+      margin: 0 auto 20px;
+      padding: 15px;
+      background: #fff3cd;
+      border: 2px solid #ffeeba;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .status {
+      text-align: center;
+      margin: 15px auto;
+      font-weight: bold;
+      color: #555;
+    }
+
+    .menu-container {
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .menu-item {
+      background: white;
+      border: 3px solid #ccc;
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      position: relative;
+    }
+
+    .menu-item.sold-out {
+      background: #e9ecef;
+      color: #777;
+    }
+
+    .menu-info {
+      flex: 1;
+    }
+
+    .menu-name {
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .menu-price {
+      margin-top: 5px;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .btn {
+      width: 65px;
+      height: 65px;
+      font-size: 30px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+    }
+
+    .btn-minus {
+      background: #ddd;
+    }
+
+    .btn-plus {
+      background: #d9534f;
+      color: white;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+    }
+
+    .count-display {
+      min-width: 40px;
+      text-align: center;
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .sold-out-badge {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) rotate(-8deg);
+
+      background: #dc3545;
+      color: white;
+      padding: 8px 25px;
+      border-radius: 8px;
+
+      font-size: 32px;
+      font-weight: bold;
+      z-index: 2;
+    }
+
+    .summary {
+      background: white;
+      border: 4px solid #d9534f;
+      border-radius: 15px;
+      padding: 25px;
+      margin: 30px auto;
+    }
+
+    .summary-title {
+      font-size: 30px;
+      font-weight: bold;
+      border-bottom: 3px solid #d9534f;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    .summary-line {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+      white-space: pre-wrap;
+    }
+
+    .empty-summary {
+      text-align: center;
+      color: #999;
+      padding: 10px;
+    }
+
+    .total {
+      border-top: 2px dashed #aaa;
+      margin-top: 20px;
+      padding-top: 15px;
+
+      font-size: 34px;
+      font-weight: bold;
+      color: #d9534f;
+    }
+
+    .submit {
+      width: 100%;
+      margin-top: 25px;
+      padding: 20px;
+
+      background: #28a745;
+      color: white;
+
+      border: none;
+      border-radius: 15px;
+
+      font-size: 30px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .submit:disabled {
+      opacity: 0.6;
+    }
+  </style>
 </head>
 
 <body>
 
-    <h1>🍜 ラーメン店</h1>
+  <div class="hygiene">
+    ✨ いつもありがとうございます！<br>
+    注文のまえに、手をきれいに洗いましょう。
+  </div>
 
-    <p>ご注文はこちらから</p>
+  <h1>🍜 ご注文をお選びください</h1>
 
-    <a href="customer.html">
-        📝 注文画面を開く
-    </a>
+  <div id="connection-status" class="status">
+    通信に接続しています…
+  </div>
+
+  <div class="menu-container">
+
+    <div id="menu-list"></div>
+
+    <div class="summary">
+
+      <div class="summary-title">
+        📝 えらんだもの
+      </div>
+
+      <div id="summary-items">
+        <div class="empty-summary">
+          まだえらばれていません
+        </div>
+      </div>
+
+      <div class="summary-line total">
+        <span>合計</span>
+        <span id="total-price">0 円</span>
+      </div>
+
+      <button
+        class="submit btn-submit"
+        onclick="submitOrder()">
+        お店につたえる
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- 共通JavaScript -->
+  <script src="./app.js"></script>
 
 </body>
 </html>
-
