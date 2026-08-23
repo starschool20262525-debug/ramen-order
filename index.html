@@ -194,12 +194,25 @@
 <body>
 
   <div class="hygiene">
-    ✨ いつもありがとうございます！<br>
-    注文のまえに、手をきれいに洗いましょう。
+    いつもありがとうございます！<br>
+    注文のまえに、手をきれいに洗っていただけると嬉しいです。
   </div>
 
   <h1>🍜 ご注文をお選びください</h1>
-
+<div class="table-select">
+  
+  <h2>🪑 座席番号をお選び下さい</h2>
+  <div class="table-buttons">
+  <button onclick="selectTable(1)">1番卓</button>
+  <button onclick="selectTable(2)">2番卓</button>
+  <button onclick="selectTable(3)">3番卓</button>
+  <button onclick="selectTable(4)">4番卓</button>
+</div>
+<div id="selected-table">
+  まだお席が選ばれていません
+ </div>
+</div>
+  
   <div id="connection-status" class="status">
     通信に接続しています…
   </div>
