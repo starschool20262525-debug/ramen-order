@@ -5,11 +5,33 @@ const PUSHER_KEY = "bf49b4f0cec0367b306c";
 const PUSHER_CLUSTER = "ap3";
 
 const menuData = [
-  { id: "m1",  name: "ラーメン",                          price: 700,  available: true },
-  { id: "m2",  name: "チャーシューメン",           price: 950,  available: true},
-  { id: "m3",  name: "ギョーザ(5個)",                  price: 400,  available: true},
-  { id: "m4",  name: "ライス",                              price: 150,  available: true},
-  { id: "m5",  name: "【季節限定】冷やし中華", price: 850,  available: true }
+  
+  {id:"m26", name:"【期間限定】冷やし中華", price:"880", available:true},
+  {id:"m27",name:"【期間限定】冷やしラーメン",price:"700",available:true },
+  {id: "m1",name: "ラーメン",price: 580,available: true},
+  {id:"m2",name:"ラーメンセット（半チャーハン.サラダ付き)",price:"860",available:true},
+  {id: "m3",name: "タンメン",price: 650,available: true},
+  {id: "m4",name: "チャーシューメン",price: 800,available: true},
+  {id: "m5",name: "麻婆メン",price: 750,available: true},
+  {id:"m6",name:"麻婆丼",price:"800",available:true},
+  {id: "m7",name: "もやしそば",price: 650,available: false},
+  {id:"m8",name:"もやしそば（あんかけ）",price:700,available:true},
+  {id:"m9",name:"野菜そば",price:"650",available:true},
+  {id:"m11",name:"味噌ラーメン",price:"650",available:true},
+  {id:"m12",name:"ちゃんぽん麺",price:"800",available:true},
+  {id:"m13",name:"野菜炒めセット（ライス.味噌汁付き）",price:"810",available:true},
+  {id:"m14",name:"カレーライスセット（サラダ.スープ付き)",price:"880",available:true},
+  {id:"m15",name:"焼肉ライス（生姜味）セット（味噌汁付き）",price:"890",available:true},
+   {id:"m16",name:"焼肉ライス（ニンニク味）セット（味噌汁付き）",price:"890",available:true},
+   {id:"m17",name:"ワンタン",price:"580",available:true},
+   {id:"m18",name:"ワンタン麺",price:"680",available:true},
+   {id:"m19",name:"チャーハン",price:"700",available:true },
+   {id:"m20",name:"半チャーハン",price:"370",available:true},
+   {id:"m21",name:"中華丼",price:"800",available:true},
+   {id:"m22",name:"ライス",price:"300",available:true},
+   {id:"m23",name:"半ライス",price:"170",available:true},
+   {id:"m24",name:"瓶ビール（大）",price:"650",available:true},
+   {id:"m25",name:"瓶ビール（中）",price:"550",available:true}
 ];
 
 let order = {};
@@ -20,6 +42,8 @@ let kitchenOrders = [];
 
 let pusher = null;
 let channel = null;
+
+
 
 // ページ判定
 function isCustomerPage() {return document.getElementById("menu-list") !== null;}
@@ -33,7 +57,7 @@ function setStatus(text) {const element = document.getElementById("connection-st
 function connectPusher() {if (typeof Pusher === "undefined") 
 { setStatus("通信部品を読み込めませんでした。"); return;}
 
-  pusher = new Pusher(PUSHER_KEY, {  cluster: PUSHER_CLUSTER});
+  pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER});
   channel = pusher.subscribe("ramen-channel");
   channel.bind("pusher:subscription_succeeded", function() {setStatus("通信中");} );
 
@@ -70,11 +94,10 @@ function renderCustomerMenu() {
 
     element.className = "menu-item " + (item.available ? "" : "sold-out");
 
-
     element.innerHTML = ` ${
         item.available
-          ? ""
-          : `<div class="sold-out-badge"> うりきれ</div>`}
+       ?""
+      : `<div class="sold-out-badge"> うりきれ</div>`
 
       <div class="menu-info">
         <div class="menu-name">
@@ -84,7 +107,6 @@ function renderCustomerMenu() {
         <div class="menu-price">
           ${item.price}円
         </div>
-
       </div>
 
       <div class="controls">
@@ -93,8 +115,7 @@ function renderCustomerMenu() {
           class="btn btn-minus"
           ${item.available ? "" : "disabled"}
           onclick="changeQty('${item.id}', -1)">
-          ー
-        </button>
+          ー </button>
 
         <span
           class="count-display"
@@ -106,8 +127,7 @@ function renderCustomerMenu() {
           class="btn btn-plus"
           ${item.available ? "" : "disabled"}
           onclick="changeQty('${item.id}', 1)">
-          ＋
-        </button>
+          ＋</button>
 
       </div> `;
 
@@ -122,7 +142,6 @@ function changeQty(id, change) {
   if (order[id] < 0) { order[id] = 0;}
 
   const counter =document.getElementById(`qty-${id}`);
-
   if (counter) { counter.innerText = order[id];}
 
   updateSummary();}
@@ -144,7 +163,7 @@ function updateSummary() {
 
     if (quantity > 0 &&
         item.available) 
-{  hasItems = true;
+{ hasItems = true;
    const itemTotal =item.price * quantity;
    total += itemTotal;
 
@@ -158,7 +177,7 @@ function updateSummary() {
 
     <span>
      ${itemTotal} 円
-    </span>  `;
+    </span> `;
 
       container.appendChild(line);} });
 
@@ -185,14 +204,13 @@ async function submitOrder() {
       orderText +=`${item.name} × ${quantity}\n`;
       total += item.price * quantity;} });
 
-
   if (total === 0) { alert("商品を1つ以上えらんでください。");return}
 
   const submitButton = document.querySelector(".btn-submit") ||
     document.querySelector(".submit");
   if (submitButton) {
     submitButton.disabled = true;
-    submitButton.innerText =  "お店につたえています…"; }
+    submitButton.innerText = "お店につたえています…"; }
 
   try {const orderData = { 
          id: Date.now().toString(),
@@ -200,15 +218,12 @@ async function submitOrder() {
          order: orderText,
          total: total};
 
-
     const response = await fetch( `${WORKER_URL}/order`,
         { method: "POST",
           headers: {"Content-Type": "application/json" },
           body:JSON.stringify(orderData) });
 
-
     const result =await response.json();
-
 
     if (!response.ok) { 
        throw new Error( result.error || "注文送信エラー");}
@@ -220,12 +235,11 @@ async function submitOrder() {
     updateSummary();}
   
      catch (error) {console.error(error);
-      alert(  "注文を送信できませんでした。\n" + "通信状態を確認してください。" );}
+      alert( "注文を送信できませんでした。\n" + "通信状態を確認してください。" );}
  
 finally { if (submitButton) { 
  submitButton.disabled = false;
- submitButton.innerText =  "お店につたえる";} }}
-
+ submitButton.innerText = "お店につたえる";} }}
 
 // お店側 メニュー
 function renderKitchenMenu() {
@@ -236,35 +250,25 @@ function renderKitchenMenu() {
 
   menuData.forEach(item => {
     const button = document.createElement("button");
-    button.className = "menu-button " +( item.available ?  "selling":  "stopped");
-
-
-    button.innerText =`${item.name}: ` +( item.available  ? "〇 販売中” : "✕ 販売停止" );
-
-
-    button.onclick =
-      () => toggleMenu( item.id, !item.available);
-
-    container.appendChild(button);  });}
+    button.className = "menu-button " +( item.available ? "selling": "stopped");
+    button.innerText =`${item.name}: ` +( item.available ? "〇 販売中" : "✕ 販売停止" );
+    button.onclick =() => toggleMenu( item.id, !item.available);
+    container.appendChild(button); });}
 
 // 販売停止 / 再開
 async function toggleMenu(id, available) {
   try {
     const response =await fetch(`${WORKER_URL}/menu`,
-       {  method: "POST",
+       { method: "POST",
           headers: { "Content-Type":"application/json"},
-
           body: JSON.stringify({
           id: id,
           available: available })});
 
-    const result =  await response.json();
+    const result = await response.json();
+    if (!response.ok) {throw new Error(result.error || "メニュー変更エラー");}
 
-    if (!response.ok) {
-      throw new Error( result.error ||  "メニュー変更エラー” );}
-
-    const item = menuData.find( item => item.id === id);
-
+    const item = menuData.find(item => item.id === id);
     if (item) {item.available = available;}
 
     renderKitchenMenu();}
@@ -282,8 +286,8 @@ function renderKitchenOrders() {
     container.innerHTML = "";
     if (kitchenOrders.length === 0) {
       container.innerHTML = `
-            <div class="empty">まだ注文はありません。</div> 
-    `; return;    }
+<div class="empty">まだ注文はありません。</div> 
+    `; return; }
 
 
     kitchenOrders
@@ -317,7 +321,7 @@ function renderKitchenOrders() {
 
 
                 <div class="order-total">
-                    合計：  ${Number(orderData.total) || 0}円
+                    合計： ${Number(orderData.total) || 0}円
                 </div>
 
                 <button>
@@ -364,13 +368,13 @@ function playNotification() {
 
     const audioContext = new AudioContext();
 
-    const oscillator =  audioContext.createOscillator();
+    const oscillator = audioContext.createOscillator();
 
     const gain = audioContext.createGain();
 
     oscillator.frequency.value =880;
 
-    gain.gain.value =  0.15;
+    gain.gain.value = 0.15;
 
     oscillator.connect(gain);
     gain.connect(audioContext.destination );
@@ -396,12 +400,13 @@ document.addEventListener("DOMContentLoaded",
 
       loadKitchenOrders();
       renderKitchenMenu();
-      renderKitchenOrders();   }
-
+      renderKitchenOrders(); }
 
     if (isCustomerPage()) {
       renderCustomerMenu();
       updateSummary(); }
 
-    connectPusher();  });
+    connectPusher(); });
+
+
 
