@@ -20,7 +20,7 @@ const menuData = [
   {
     id: "m1",
     name: "ラーメン",
-    price: 580,
+    price:"580",
     available: true
   },
   {
@@ -33,19 +33,19 @@ const menuData = [
   {
     id: "m3",
     name: "タンメン",
-    price: 650,
+    price:"650",
     available: true
   },
   {
     id: "m4",
     name: "チャーシューメン",
-    price: 800,
+    price:"800",
     available: true
   },
   {
     id: "m5",
     name: "麻婆メン",
-    price: 750,
+    price:"750",
     available: true
   },
   {
@@ -57,13 +57,13 @@ const menuData = [
   {
     id: "m7",
     name: "もやしそば",
-    price: 650,
+    price:"650",
     available:true
   },
   {
     id:"m8",
     name:"もやしそば（あんかけ）",
-    price:700,
+    price:"700",
     available:true
   },
   {
