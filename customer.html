@@ -4,149 +4,178 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>博来軒 注文画面</title>
+<title>ラーメン店 注文画面</title>
 
 <script src="https://js.pusher.com/8.3.0/pusher.min.js"></script>
 
 <style>
-body { font-family: "Meiryo", sans-serif;
-  　 background: #f8f9fa;
-           margin: 0;
-           padding: 20px;
-           color: #333;
-           font-size: 22px;}
+body {
+    font-family: "Meiryo", sans-serif;
+    background: #f8f9fa;
+    margin: 0;
+    padding: 20px;
+    color: #333;
+    font-size: 22px;
+}
 
-h1 {text-align: center;
-      color: #d9534f;
-      font-size: 36px;}
+h1 {
+    text-align: center;
+    color: #d9534f;
+    font-size: 36px;
+}
 
-.hygiene {max-width: 800px;
-               margin: 0 auto 20px;
-               padding: 15px;
-               background: #fff3cd;
-               border: 2px solid #ffeeba;
-               border-radius: 10px;
-               text-align: center;
-               font-weight: bold;}
+.hygiene {
+    max-width: 800px;
+    margin: 0 auto 20px;
+    padding: 15px;
+    background: #fff3cd;
+    border: 2px solid #ffeeba;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: bold;
+}
 
-.menu-container { max-width: 800px;
-                             margin: auto;}
+.menu-container {
+    max-width: 800px;
+    margin: auto;
+}
 
-.menu-item {background: white;
-                    border: 3px solid #ccc;
-                    border-radius: 15px;
-                    padding: 20px;
-                    margin-bottom: 20px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    position: relative;}
+.menu-item {
+    background: white;
+    border: 3px solid #ccc;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
 
-.menu-item.soldout {background: #e9ecef;
-                                 color: #777;}
+.menu-item.soldout {
+    background: #e9ecef;
+    color: #777;
+}
 
-.menu-info {flex: 1;}
+.menu-info {
+    flex: 1;
+}
 
-.menu-name {font-size: 28px;
-                      font-weight: bold;}
+.menu-name {
+    font-size: 28px;
+    font-weight: bold;
+}
 
-.menu-price { margin-top: 5px;}
+.menu-price {
+    margin-top: 5px;
+}
 
-.controls {display: flex;
-                align-items: center;
-                gap: 15px;}
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
 
-.btn {width: 65px;
-        height: 65px;
-        font-size: 30px;
-        font-weight: bold;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;}
+.btn {
+    width: 65px;
+    height: 65px;
+    font-size: 30px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
 
-.minus { background: #ddd;}
+.minus {
+    background: #ddd;
+}
 
-.plus {background: #d9534f;
-          color: white;}
+.plus {
+    background: #d9534f;
+    color: white;
+}
 
-.count {min-width: 40px;
-            text-align: center;
-            font-size: 32px;
-            font-weight: bold;}
+.count {
+    min-width: 40px;
+    text-align: center;
+    font-size: 32px;
+    font-weight: bold;
+}
 
-.soldout-badge {position: absolute;
-                          left: 50%;
-                          top: 50%;
-                          transform: translate(-50%, -50%) rotate(-8deg);
-                          background: #dc3545;
-                          color: white;
-                          padding: 8px 25px;
-                          border-radius: 8px;
-                          font-size: 32px;
-                          font-weight: bold;}
+.soldout-badge {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(-8deg);
+    background: #dc3545;
+    color: white;
+    padding: 8px 25px;
+    border-radius: 8px;
+    font-size: 32px;
+    font-weight: bold;
+}
 
-.summary { max-width: 800px;
-                   margin: 30px auto;
-                   background: white;
-                   border: 4px solid #d9534f;
-                   border-radius: 15px;
-                   padding: 25px;}
+.summary {
+    max-width: 800px;
+    margin: 30px auto;
+    background: white;
+    border: 4px solid #d9534f;
+    border-radius: 15px;
+    padding: 25px;
+}
 
-.summary-title { font-size: 30px;
-                          font-weight: bold;
-                          border-bottom: 3px solid #d9534f;
-                          padding-bottom: 10px;
-                          margin-bottom: 15px;}
+.summary-title {
+    font-size: 30px;
+    font-weight: bold;
+    border-bottom: 3px solid #d9534f;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
 
-.summary-line {display: flex;
-                         justify-content: space-between;
-                         margin: 10px 0;}
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+}
 
-.total { border-top: 2px dashed #aaa;
-           margin-top: 20px;
-           padding-top: 15px;
-           font-size: 34px;
-           font-weight: bold;
-           color: #d9534f;}
+.total {
+    border-top: 2px dashed #aaa;
+    margin-top: 20px;
+    padding-top: 15px;
+    font-size: 34px;
+    font-weight: bold;
+    color: #d9534f;
+}
 
-.submit {width: 100%;
-              margin-top: 25px;
-              padding: 20px;
-              background: #28a745;
-              color: white;
-              border: none;
-              border-radius: 15px;
-              font-size: 30px;
-              font-weight: bold;
-              cursor: pointer;}
+.submit {
+    width: 100%;
+    margin-top: 25px;
+    padding: 20px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    font-size: 30px;
+    font-weight: bold;
+    cursor: pointer;
+}
 
-.status { max-width: 800px;
-               margin: 15px auto;
-               text-align: center;
-               font-weight: bold;}
+.status {
+    max-width: 800px;
+    margin: 15px auto;
+    text-align: center;
+    font-weight: bold;
+}
 </style>
 </head>
 
 <body>
 
 <div class="hygiene">
-    いつもありがとうございます！<br>
-    注文のまえに、手をきれいに洗っていただけると嬉しいです。
+    ✨ いつもありがとうございます！<br>
+    注文のまえに、手をきれいに洗いましょう。
 </div>
 
-    <div class="table-select">
-  <h2>🪑 座席番号をお選び下さい</h2>
-  <div class="table-buttons">
-  <button onclick="selectTable(1)">1番卓</button>
-  <button onclick="selectTable(2)">2番卓</button>
-  <button onclick="selectTable(3)">3番卓</button>
-  <button onclick="selectTable(4)">4番卓</button>
-</div>
-<div id="selected-table">
-  まだお席が選ばれていません
- </div>
-</div>
-    
 <h1>🍜 ご注文をお選びください</h1>
 
 <div id="status" class="status"></div>
@@ -158,8 +187,8 @@ h1 {text-align: center;
     <div class="summary">
 
         <div class="summary-title">
-            📝 えらんだもの 
-       </div>
+            📝 えらんだもの
+        </div>
 
         <div id="summary-items">
             まだえらばれていません
@@ -180,62 +209,155 @@ h1 {text-align: center;
 
 <script>
 
+// ==================================================
 // Cloudflare Worker
-const WORKER_URL ="https://rame-order-api.starschool20262525.workers.dev";
+// ==================================================
 
+const WORKER_URL =
+    "https://rame-order-api.starschool20262525.workers.dev";
+
+
+// ==================================================
 // Pusher
-const PUSHER_KEY ="bf49b4f0cec0367b306c";
-const PUSHER_CLUSTER ="ap3";
-const pusher = new Pusher(PUSHER_KEY, {cluster: PUSHER_CLUSTER, forceTLS: true});
+// ==================================================
 
+const PUSHER_KEY =
+    "bf49b4f0cec0367b306c";
+
+const PUSHER_CLUSTER =
+    "ap3";
+
+const pusher = new Pusher(PUSHER_KEY, {
+    cluster: PUSHER_CLUSTER,
+    forceTLS: true
+});
+
+
+// ==================================================
 // Pusherチャンネル
-const channel =pusher.subscribe("ramen-channel");
+// ==================================================
+
+const channel =
+    pusher.subscribe("ramen-channel");
+
+
+// ==================================================
 // メニュー
+// ==================================================
 
 const menuData = [
-    { id: "m1", name: "ラーメン", price: 700, available: true},
-    { id: "m2", name: "チャーシューメン", price: 950, available: true},
-    {id: "m3", name: "ギョーザ（5個）", price: 400,available: true},
-    { id: "m4", name: "ライス", price: 150, available: true },
-    {id: "m5", name: "【季節限定】冷やし中華",price: 850, available: false}
+
+    {
+        id: "m1",
+        name: "ラーメン",
+        price: 700,
+        available: true
+    },
+
+    {
+        id: "m2",
+        name: "チャーシューメン",
+        price: 950,
+        available: true
+    },
+
+    {
+        id: "m3",
+        name: "ギョーザ（5個）",
+        price: 400,
+        available: true
+    },
+
+    {
+        id: "m4",
+        name: "ライス",
+        price: 150,
+        available: true
+    },
+
+    {
+        id: "m5",
+        name: "【季節限定】冷やし中華",
+        price: 850,
+        available: false
+    }
+
 ];
 
-// 注文数
-let order = {};
-menuData.forEach(item => {order[item.id] = 0;});
 
+// ==================================================
+// 注文数
+// ==================================================
+
+let order = {};
+
+menuData.forEach(item => {
+    order[item.id] = 0;
+});
+
+
+// ==================================================
 // お店からの売り切れ情報
-channel.bind("menu-updated", function(data) {console.log("メニュー変更:", data);
-    const item = menuData.find(item => item.id === data.id);
+// ==================================================
+
+channel.bind("menu-updated", function(data) {
+
+    console.log("メニュー変更:", data);
+
+    const item =
+        menuData.find(item => item.id === data.id);
 
     if (!item) return;
-    item.available = Boolean(data.available);
+
+    item.available =
+        Boolean(data.available);
 
     // 売り切れになったら注文数を0にする
-    if (!item.available) { order[item.id] = 0;}
+    if (!item.available) {
+        order[item.id] = 0;
+    }
 
     renderMenu();
     updateSummary();
+
     showStatus(
         item.name +
         (item.available
             ? " が販売再開しました"
-            : " が売り切れになりました") );});
+            : " が売り切れになりました")
+    );
 
+});
+
+
+// ==================================================
 // メニュー表示
+// ==================================================
+
 function renderMenu() {
-    const menuList = document.getElementById("menu-list");
+
+    const menuList =
+        document.getElementById("menu-list");
 
     menuList.innerHTML = "";
 
     menuData.forEach(item => {
-        const div = document.createElement("div");
 
-        div.className = "menu-item " + (item.available ? "" : "soldout");
+        const div =
+            document.createElement("div");
+
+        div.className =
+            "menu-item " +
+            (item.available ? "" : "soldout");
+
 
         let buttons = "";
+
+
         if (item.available) {
+
             buttons = `
+
                 <button
                     class="btn minus"
                     onclick="changeQty('${item.id}', -1)">
@@ -252,20 +374,33 @@ function renderMenu() {
                     class="btn plus"
                     onclick="changeQty('${item.id}', 1)">
                     ＋
-                </button> `;
+                </button>
+
+            `;
 
         } else {
+
             buttons = `
+
                 <span style="font-weight:bold;">
                     販売停止
-                </span>`;}
+                </span>
+
+            `;
+
+        }
+
 
         div.innerHTML = `
-            ${item.available
+
+            ${
+                item.available
                 ? ""
-                : '<div class="soldout-badge">うりきれ</div>'}
+                : '<div class="soldout-badge">うりきれ</div>'
+            }
 
             <div class="menu-info">
+
                 <div class="menu-name">
                     ${item.name}
                 </div>
@@ -278,46 +413,89 @@ function renderMenu() {
 
             <div class="controls">
                 ${buttons}
-            </div>`;
+            </div>
 
-        menuList.appendChild(div);});}
+        `;
 
+        menuList.appendChild(div);
+
+    });
+
+}
+
+
+// ==================================================
 // 個数変更
+// ==================================================
 
 function changeQty(id, change) {
-    const item = menuData.find(item => item.id === id);
-    if (!item || !item.available) { return; }
+
+    const item =
+        menuData.find(item => item.id === id);
+
+    if (!item || !item.available) {
+        return;
+    }
+
 
     order[id] += change;
 
-    if (order[id] < 0) { order[id] = 0;}
+
+    if (order[id] < 0) {
+        order[id] = 0;
+    }
+
 
     renderMenu();
-    updateSummary();}
+    updateSummary();
 
+}
+
+
+// ==================================================
 // 注文確認
+// ==================================================
+
 function updateSummary() {
-    const summary = document.getElementById("summary-items");
-    const totalElement =document.getElementById("total-price");
+
+    const summary =
+        document.getElementById("summary-items");
+
+    const totalElement =
+        document.getElementById("total-price");
+
+
     summary.innerHTML = "";
+
 
     let total = 0;
     let hasItems = false;
 
+
     menuData.forEach(item => {
-        const qty =order[item.id];
+
+        const qty =
+            order[item.id];
+
 
         if (qty > 0 && item.available) {
 
             hasItems = true;
 
-            const itemTotal =item.price * qty;
+
+            const itemTotal =
+                item.price * qty;
+
 
             total += itemTotal;
 
-            const line =document.createElement("div");
 
-            line.className = "summary-line";
+            const line =
+                document.createElement("div");
+
+            line.className =
+                "summary-line";
+
 
             line.innerHTML = `
 
@@ -327,94 +505,232 @@ function updateSummary() {
 
                 <span>
                     ${itemTotal} 円
-                </span>`;
+                </span>
 
-            summary.appendChild(line);}});
+            `;
+
+
+            summary.appendChild(line);
+
+        }
+
+    });
+
 
     if (!hasItems) {
-  　 summary.innerHTML =
-          '<div style="text-align:center;color:#999;">' + 'まだえらばれていません' + '</div>';}
-    totalElement.innerText =total + " 円";}
 
+        summary.innerHTML =
+            '<div style="text-align:center;color:#999;">' +
+            'まだえらばれていません' +
+            '</div>';
+
+    }
+
+
+    totalElement.innerText =
+        total + " 円";
+
+}
+
+
+// ==================================================
 // 注文送信
+// ==================================================
+
 async function submitOrder() {
+
     let total = 0;
+
     let items = [];
+
+
     menuData.forEach(item => {
-        const qty =order[item.id];
+
+        const qty =
+            order[item.id];
+
 
         if (qty > 0 && item.available) {
-            total += item.price * qty;
+
+            total +=
+                item.price * qty;
+
+
             items.push({
+
                 id: item.id,
+
                 name: item.name,
+
                 price: item.price,
-                quantity: qty });} });
+
+                quantity: qty
+
+            });
+
+        }
+
+    });
+
 
     // 商品がない場合
     if (items.length === 0) {
-        alert( "商品を1つ以上えらんでください。");return;}
 
-    const now = new Date();
+        alert(
+            "商品を1つ以上えらんでください。"
+        );
+
+        return;
+
+    }
+
+
+    const now =
+        new Date();
+
 
     const orderData = {
-        id:Date.now().toString(),
-        time: now.toLocaleTimeString("ja-JP",
-                { hour: "2-digit",minute: "2-digit" }),
 
-        items: items,
+        id:
+            Date.now().toString(),
 
-        total:total};
-    
-    const submitButton = document.querySelector(".submit");
+        time:
+            now.toLocaleTimeString(
+                "ja-JP",
+                {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                }
+            ),
+
+        items:
+            items,
+
+        total:
+            total
+
+    };
+
+
+    // 二重送信防止
+    const submitButton =
+        document.querySelector(".submit");
 
     submitButton.disabled = true;
 
-    submitButton.innerText = "送信しています...";
+    submitButton.innerText =
+        "送信しています...";
 
 
-    try { const response =await fetch( WORKER_URL + "/order",
-          { method: "POST",
-           headers: {"Content-Type": "application/json"},
+    try {
 
-                    body:JSON.stringify(orderData)});
+        const response =
+            await fetch(
+                WORKER_URL + "/order",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(orderData)
+
+                }
+            );
 
 
-        const result =await response.json();
+        const result =
+            await response.json();
 
 
-        console.log( "Worker response:",result );
+        console.log(
+            "Worker response:",
+            result
+        );
+
+
         if (!response.ok || !result.ok) {
 
             throw new Error(
                 result.error ||
-                "注文送信に失敗しました。" ); }
+                "注文送信に失敗しました"
+            );
+
+        }
 
 
-        alert( "お店に注文をつたえました！\n" +"少々お待ちください。");
+        alert(
+            "お店に注文をつたえました！\n" +
+            "少々お待ちください。"
+        );
 
 
         // 注文をリセット
-        menuData.forEach(item => { order[item.id] = 0; });
+
+        menuData.forEach(item => {
+            order[item.id] = 0;
+        });
+
 
         renderMenu();
-        updateSummary()};
-        catch (error) console.error ("注文送信エラー:",
-            error );
+        updateSummary();
 
 
-    alert( "注文を送信できませんでした。\n" +"お店の人に声をかけてください。");}
-    finally { submitButton.disabled = false;
-                submitButton.innerText = "お店につたえる"; }}
+    } catch (error) {
 
+        console.error(
+            "注文送信エラー:",
+            error
+        );
+
+
+        alert(
+            "注文を送信できませんでした。\n" +
+            "お店の人に声をかけてください。"
+        );
+
+
+    } finally {
+
+        submitButton.disabled = false;
+
+        submitButton.innerText =
+            "お店につたえる";
+
+    }
+
+}
+
+
+// ==================================================
 // ステータス表示
+// ==================================================
+
 function showStatus(message) {
-    const status = document.getElementById("status");
 
-    status.innerText = message;
-    setTimeout(() => { status.innerText = ""; }, 3000);}
+    const status =
+        document.getElementById("status");
 
+    status.innerText =
+        message;
+
+    setTimeout(() => {
+
+        status.innerText = "";
+
+    }, 3000);
+
+}
+
+
+// ==================================================
 // 初期表示
+// ==================================================
+
 renderMenu();
 updateSummary();
 
@@ -422,5 +738,3 @@ updateSummary();
 
 </body>
 </html>
-
-
