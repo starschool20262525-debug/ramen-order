@@ -189,7 +189,6 @@ function isKitchenPage() {
   return document.getElementById("order-list") !== null;
 }
 
-
 // =====================================
 // ステータス
 // =====================================
