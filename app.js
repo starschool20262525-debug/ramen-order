@@ -59,7 +59,7 @@ const menuData = [
     id: "m7",
     name: "もやしそば",
     price: 650,
-    available: false
+    available:true
   },
   {
     id:"m8",
