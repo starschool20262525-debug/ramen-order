@@ -312,15 +312,8 @@ function renderCustomerMenu() {
       (item.available ? "" : "sold-out");
 
 
-    element.innerHTML = `
-
-      ${
-        item.available
-          ? ""
-          : `<div class="sold-out-badge">
-               うりきれ
-             </div>`
-      }
+    element.innerHTML = `${item.available"?": `<div class="sold-out-badge">
+               うりきれ</div>`}
 
       <div class="menu-info">
 
