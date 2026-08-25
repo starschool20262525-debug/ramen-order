@@ -25,8 +25,7 @@ const menuData = [
   },
   {
     id:"m2",
-    name:"ラーメンセット
-      　　（半チャーハン、サラダ付き）",
+    name:"ラーメンセット（半チャーハン、サラダ付き）",
     price:"860",
     available:true
   },
